@@ -16,7 +16,7 @@ class App extends Component {
   componentDidMount() {
     axios({
       method: 'POST',
-      url: 'http://localhost:8000/users/login',
+      url: '/users/login',
       data: {
         email: 'test@test.com',
         password: 'test'
@@ -47,7 +47,7 @@ class App extends Component {
   getPlayerData = (token) => {
     axios({
       method: 'GET',
-      url: 'http://localhost:8000/users/' + this.state.userId + '/history',
+      url: '/users/' + this.state.userId + '/history',
       headers: {
         'Authorization': token
       }

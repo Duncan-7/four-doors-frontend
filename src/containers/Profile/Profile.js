@@ -8,7 +8,7 @@ class Profile extends Component {
   authTest = () => {
     axios({
       method: 'GET',
-      url: 'http://localhost:8000/users/test',
+      url: '/users/test',
       headers: {
         'Authorization': this.props.JWT
       }

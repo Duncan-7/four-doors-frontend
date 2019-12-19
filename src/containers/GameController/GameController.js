@@ -105,7 +105,7 @@ class GameController extends Component {
   createDatabaseEntry = () => {
     axios({
       method: 'POST',
-      url: 'http://localhost:8000/playthroughs',
+      url: '/playthroughs',
       data: {
         user: this.props.userId,
         winnings: 0,
@@ -137,7 +137,7 @@ class GameController extends Component {
   updateDatabase = (winnings, round, complete) => {
     axios({
       method: 'POST',
-      url: 'http://localhost:8000/playthroughs/' + this.state.gameId,
+      url: '/playthroughs/' + this.state.gameId,
       data: {
         user: this.props.userId,
         winnings: winnings,
@@ -183,7 +183,7 @@ class GameController extends Component {
       controls = [
         <Button key={1} clicked={this.startGame} btnType="btn-primary">Play Again</Button>,
         <NavLink key={2} to="/profile">
-          <Button btnType="btn-primary" onClick={this.props.updateData}>Back To Profile</Button>
+          <Button btnType="btn-primary">Back To Profile</Button>
         </NavLink>
       ]
     }
