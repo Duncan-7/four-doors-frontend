@@ -12,9 +12,13 @@ code {
     monospace;
 }
 
-.game {
+.container {
   width:80%;
   margin: auto;
+}
+
+.game {
+  
   text-align: center;
 }
 
