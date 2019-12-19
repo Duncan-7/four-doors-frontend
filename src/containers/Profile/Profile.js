@@ -1,35 +1,70 @@
 import React, { Component } from 'react';
+import { NavLink } from 'react-router-dom';
+import axios from 'axios';
+import Button from '../../components/Button/Button';
 
 class Profile extends Component {
-  state = {
-    loggedIn: "no",
-    pastRestuls: null
-  }
 
-  componentDidMount() {
-    fetch('https://polar-basin-72888.herokuapp.com/users/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'test@test.com', password: 'test' }),
-      headers: { 'Content-Type': 'application/json' }
+  authTest = () => {
+    axios({
+      method: 'GET',
+      url: 'http://localhost:8000/users/test',
+      headers: {
+        'Authorization': this.props.JWT
+      }
     })
       .then(res => {
-        console.log(res.body);
+        if (res.status === 200) {
+          alert("authorized");
+        } else {
+          const error = new Error(res.error);
+          throw error;
+        }
       })
-  }
-
-  authTest() {
-    fetch('https://polar-basin-72888.herokuapp.com/users/test')
-      .then(res => {
-        console.log(res);
-      })
+      .catch(err => {
+        console.error(err);
+        alert('Error with authorization in please try again');
+      });
   }
 
   render() {
+    let numberOfGames = "loading..."
+    let maxRound = 0
+    let totalWinnings = "loading..."
+
+    if (this.props.userData) {
+      const completedGames = this.props.userData.filter(game => {
+        return game.complete;
+      });
+
+      numberOfGames = completedGames.length
+
+      completedGames.forEach(game => {
+        if (game.round > maxRound) {
+          maxRound = game.round;
+        }
+      });
+
+      totalWinnings = completedGames.reduce((total, game) => {
+        return total += game.winnings;
+      }, 0)
+    }
+
     return (
       <div>
-        <p>Logged In: {this.state.loggedIn}</p>
-        <p>Some past results stuff</p>
-        <button onClick={this.authTest}>test</button>
+        <p>Logged In: {this.props.loggedIn.toString()}</p>
+        <p>Games Played: {numberOfGames}</p>
+        <p>Highest Round: {maxRound}</p>
+        <p>Total Winnings: {totalWinnings}</p>
+
+
+
+        <NavLink to="/game">
+          <Button btnType="btn-primary">Play Game</Button>
+        </NavLink>
+        <br />
+        <br />
+        <button onClick={this.authTest}>Test Authorization</button>
       </div>
     );
   }

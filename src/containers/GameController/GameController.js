@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
+import { NavLink } from 'react-router-dom';
 import Door from '../../components/Door/Door';
 import Button from '../../components/Button/Button';
+import axios from 'axios';
 
 class GameController extends Component {
   state = {
@@ -14,6 +16,7 @@ class GameController extends Component {
     door2Text: "",
     door3Text: "",
     door4Text: "",
+    gameId: null
   }
 
   startGame = () => {
@@ -25,7 +28,8 @@ class GameController extends Component {
       inRound: true,
       lost: false,
       gameOver: false
-    })
+    });
+    this.createDatabaseEntry();
   }
 
   nextRound = () => {
@@ -41,6 +45,7 @@ class GameController extends Component {
     this.setState({
       gameOver: true
     })
+    this.updateDatabase(this.state.winnings, this.state.round, true);
   }
 
   chooseDoor = (index) => {
@@ -57,8 +62,10 @@ class GameController extends Component {
         gameOver: true,
         lost: true
       })
+      this.updateDatabase(0, this.state.round, true);
     }
-    if (!this.state.gameOver) {
+    if (result !== 0) {
+      this.updateDatabase(this.state.winnings + prize, this.state.round, false);
       this.setState({
         winnings: this.state.winnings + prize,
         inRound: false
@@ -95,6 +102,67 @@ class GameController extends Component {
     })
   }
 
+  createDatabaseEntry = () => {
+    axios({
+      method: 'POST',
+      url: 'http://localhost:8000/playthroughs',
+      data: {
+        user: this.props.userId,
+        winnings: 0,
+        round: 1,
+        complete: false
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': this.props.JWT
+      }
+    })
+      .then(res => {
+        if (res.status === 200) {
+          this.setState({
+            gameId: res.data.gameId
+          })
+          console.log("game created")
+        } else {
+          const error = new Error(res.error);
+          throw error;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error creating game please try again');
+      });
+  }
+
+  updateDatabase = (winnings, round, complete) => {
+    axios({
+      method: 'POST',
+      url: 'http://localhost:8000/playthroughs/' + this.state.gameId,
+      data: {
+        user: this.props.userId,
+        winnings: winnings,
+        round: round,
+        complete: complete
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': this.props.JWT
+      }
+    })
+      .then(res => {
+        if (res.status === 200) {
+          console.log("game saved")
+        } else {
+          const error = new Error(res.error);
+          throw error;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error updating game please try again');
+      });
+  }
+
   render() {
     let text = "Explanation of how the game works"
 
@@ -114,7 +182,9 @@ class GameController extends Component {
       text = `Know when to hold 'em, know when to fold 'em...You won ${this.state.winnings} coins! Click below to play again!`
       controls = [
         <Button key={1} clicked={this.startGame} btnType="btn-primary">Play Again</Button>,
-        <Button key={2} btnType="btn-primary">Back To Profile</Button>
+        <NavLink key={2} to="/profile">
+          <Button btnType="btn-primary" onClick={this.props.updateData}>Back To Profile</Button>
+        </NavLink>
       ]
     }
 
