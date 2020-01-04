@@ -31,9 +31,10 @@ class Profile extends Component {
     let numberOfGames = "loading..."
     let maxRound = 0
     let totalWinnings = "loading..."
+    let accountBalance = "loading..."
 
     if (this.props.userData) {
-      const completedGames = this.props.userData.filter(game => {
+      const completedGames = this.props.userData.playerData.filter(game => {
         return game.complete;
       });
 
@@ -48,6 +49,8 @@ class Profile extends Component {
       totalWinnings = completedGames.reduce((total, game) => {
         return total += game.winnings;
       }, 0)
+      console.log(this.props.userData)
+      accountBalance = this.props.userData.user.balance;
     }
 
     return (
@@ -56,6 +59,7 @@ class Profile extends Component {
         <p>Games Played: {numberOfGames}</p>
         <p>Highest Round: {maxRound}</p>
         <p>Total Winnings: {totalWinnings}</p>
+        <p>Current Account Balance: {accountBalance}</p>
 
 
 

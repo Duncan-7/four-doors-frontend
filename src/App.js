@@ -18,8 +18,8 @@ class App extends Component {
       method: 'POST',
       url: '/users/login',
       data: {
-        email: 'test@test.com',
-        password: 'test'
+        email: 'test2@test.com',
+        password: 'blinkpool'
       },
       headers: {
         'Content-Type': 'application/json'
@@ -56,7 +56,7 @@ class App extends Component {
         if (res.status === 200) {
           console.log(res.data);
           this.setState({
-            userData: res.data.playerData
+            userData: res.data
           })
         } else {
           const error = new Error(res.error);
@@ -89,7 +89,8 @@ class App extends Component {
               render={(props) => <GameController {...props}
                 loggedIn={this.state.loggedIn}
                 JWT={this.state.JWT}
-                userId={this.state.userId} />}
+                userId={this.state.userId}
+                balance={this.state.userData.user.balance} />}
             />
             <Redirect from="/" to="/profile" />
           </Switch>

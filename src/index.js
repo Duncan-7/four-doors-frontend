@@ -5,8 +5,9 @@ import App from './App';
 import * as serviceWorker from './serviceWorker';
 import axios from 'axios';
 
-axios.defaults.baseURL = 'https://polar-basin-72888.herokuapp.com/'
+axios.defaults.baseURL = 'http://localhost:8000/'
 
+// 'https://polar-basin-72888.herokuapp.com/'
 ReactDOM.render(<App />, document.getElementById('root'));
 
 // If you want your app to work offline and load faster, you can change

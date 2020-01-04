@@ -16,93 +16,12 @@ class GameController extends Component {
     door2Text: "",
     door3Text: "",
     door4Text: "",
-    gameId: null
+    gameId: null,
+    selectedDoor: null
   }
 
   startGame = () => {
     this.clearDisplay();
-    this.setState({
-      round: 1,
-      winnings: 0,
-      started: true,
-      inRound: true,
-      lost: false,
-      gameOver: false
-    });
-    this.createDatabaseEntry();
-  }
-
-  nextRound = () => {
-    this.clearDisplay();
-    const newRound = this.state.round + 1
-    this.setState({
-      round: newRound,
-      inRound: true,
-    })
-  }
-
-  cashout = () => {
-    this.setState({
-      gameOver: true
-    })
-    this.updateDatabase(this.state.winnings, this.state.round, true);
-  }
-
-  chooseDoor = (index) => {
-    if (!this.state.inRound) {
-      return;
-    }
-    const result = this.generateResult();
-    const prize = this.calculatePrize(result);
-    this.displayResults(index, prize);
-    if (result === 0) {
-      this.setState({
-        winnings: 0,
-        inRound: false,
-        gameOver: true,
-        lost: true
-      })
-      this.updateDatabase(0, this.state.round, true);
-    }
-    if (result !== 0) {
-      this.updateDatabase(this.state.winnings + prize, this.state.round, false);
-      this.setState({
-        winnings: this.state.winnings + prize,
-        inRound: false
-      })
-    }
-  }
-
-  generateResult() {
-    return Math.floor(Math.random() * 4);
-  }
-
-  calculatePrize(result) {
-    return 10 * result * this.state.round;
-  }
-
-  displayResults = (index, prize) => {
-    let newState = {
-      ...this.state
-    }
-    if (prize === 0) {
-      newState[`door${index}Text`] = "You Lose"
-    } else {
-      newState[`door${index}Text`] = prize;
-    }
-    this.setState(newState);
-  }
-
-  clearDisplay = () => {
-    this.setState({
-      door1Text: "",
-      door2Text: "",
-      door3Text: "",
-      door4Text: ""
-    })
-  }
-
-  createDatabaseEntry = () => {
     axios({
       method: 'POST',
       url: '/playthroughs',
@@ -120,7 +39,13 @@ class GameController extends Component {
       .then(res => {
         if (res.status === 200) {
           this.setState({
-            gameId: res.data.gameId
+            gameId: res.data.gameId,
+            round: 1,
+            winnings: 0,
+            started: true,
+            inRound: true,
+            lost: false,
+            gameOver: false
           })
           console.log("game created")
         } else {
@@ -134,15 +59,72 @@ class GameController extends Component {
       });
   }
 
-  updateDatabase = (winnings, round, complete) => {
+  nextRound = () => {
+    this.clearDisplay();
+
     axios({
       method: 'POST',
-      url: '/playthroughs/' + this.state.gameId,
+      url: '/playthroughs/game/' + this.state.gameId + '/nextround',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': this.props.JWT
+      }
+    })
+      .then(res => {
+        if (res.status === 200) {
+          this.setState({
+            round: res.data.playthrough.round,
+            winnings: res.data.playthrough.winnings,
+            inRound: true,
+          })
+          console.log("next round started")
+        } else {
+          const error = new Error(res.error);
+          throw error;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error starting next round, please try again');
+      });
+  }
+
+  cashout = () => {
+    axios({
+      method: 'POST',
+      url: '/playthroughs/game/' + this.state.gameId + '/cashout',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': this.props.JWT
+      }
+    })
+      .then(res => {
+        if (res.status === 200) {
+          this.setState({
+            gameOver: true
+          })
+          console.log("cashed out")
+        } else {
+          const error = new Error(res.error);
+          throw error;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error cashing out, please try again');
+      });
+  }
+
+  chooseDoor = (index) => {
+    if (!this.state.inRound) {
+      return;
+    }
+
+    axios({
+      method: 'POST',
+      url: '/playthroughs/game/' + this.state.gameId,
       data: {
-        user: this.props.userId,
-        winnings: winnings,
-        round: round,
-        complete: complete
+        selection: index - 1
       },
       headers: {
         'Content-Type': 'application/json',
@@ -151,7 +133,32 @@ class GameController extends Component {
     })
       .then(res => {
         if (res.status === 200) {
-          console.log("game saved")
+          if (res.data.playerSelection === "You lose") {
+            this.setState({
+              round: res.data.playthrough.round,
+              winnings: res.data.playthrough.winnings,
+              inRound: false,
+              lost: true,
+              gameOver: true,
+              door1Text: res.data.results[0],
+              door2Text: res.data.results[1],
+              door3Text: res.data.results[2],
+              door4Text: res.data.results[3],
+              selectedDoor: index
+            })
+          } else {
+            this.setState({
+              round: res.data.playthrough.round,
+              winnings: res.data.playthrough.winnings,
+              inRound: false,
+              door1Text: res.data.results[0],
+              door2Text: res.data.results[1],
+              door3Text: res.data.results[2],
+              door4Text: res.data.results[3],
+              selectedDoor: index
+            })
+          }
+          console.log("Round complete!")
         } else {
           const error = new Error(res.error);
           throw error;
@@ -159,12 +166,22 @@ class GameController extends Component {
       })
       .catch(err => {
         console.error(err);
-        alert('Error updating game please try again');
+        alert('Error starting next round, please try again');
       });
   }
 
+  clearDisplay = () => {
+    this.setState({
+      door1Text: "",
+      door2Text: "",
+      door3Text: "",
+      door4Text: "",
+      selectedDoor: null
+    })
+  }
+
   render() {
-    let text = "Explanation of how the game works"
+    let text = "Pay 50 coins to enter. If you have less than 50 coins you can still play!"
 
     let controls = <Button clicked={this.startGame} btnType="btn-primary">Start</Button>
     if (this.state.inRound) {
@@ -193,18 +210,19 @@ class GameController extends Component {
     }
 
     let doors = [
-      <Door key={1} index={1} onSelect={this.chooseDoor} content={this.state.door1Text} />,
-      <Door key={2} index={2} onSelect={this.chooseDoor} content={this.state.door2Text} />,
-      <Door key={3} index={3} onSelect={this.chooseDoor} content={this.state.door3Text} />,
-      <Door key={4} index={4} onSelect={this.chooseDoor} content={this.state.door4Text} />
+      <Door key={1} index={1} selected={this.state.selectedDoor === 1} onSelect={this.chooseDoor} content={this.state.door1Text} />,
+      <Door key={2} index={2} selected={this.state.selectedDoor === 2} onSelect={this.chooseDoor} content={this.state.door2Text} />,
+      <Door key={3} index={3} selected={this.state.selectedDoor === 3} onSelect={this.chooseDoor} content={this.state.door3Text} />,
+      <Door key={4} index={4} selected={this.state.selectedDoor === 4} onSelect={this.chooseDoor} content={this.state.door4Text} />
     ]
 
     return (
       <div className="game">
         <h1>Game Title</h1>
         {text}
+        <p>Current Account Balance: {this.props.balance}</p>
         <p>Round: {this.state.round}</p>
-        <p>Winnings: {this.state.lost ? `${this.state.winnings} coins down the drain` : this.state.winnings}</p>
+        <p>Winnings: {this.state.winnings}</p>
         <div className="door-container">
           {doors}
         </div>
